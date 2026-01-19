@@ -1,11 +1,14 @@
 <template>
   <div class="filtros">
     <Actividad />
-    <Geografico tipo="municipio" />
-    <Geografico tipo="localidad" />
+    
+    <Geografico /> 
+    
     <AgebManzana />
 
-    <button @click="consultar">Consultar</button>
+    <button class="btn-consultar" @click="consultar">
+       Consultar Unidades
+    </button>
   </div>
 </template>
 

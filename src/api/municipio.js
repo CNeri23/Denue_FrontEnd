@@ -39,3 +39,11 @@ export async function getMunicipiosByEntidad(idEntidad) {
 export async function getMunicipiosEdomex() {
   return getMunicipiosByEntidad(15)
 }
+
+export async function getEntidades() {
+  const res = await fetch(`${BASE}/entidadFederativa`) 
+  if (!res.ok) {
+    throw new Error('Error al obtener entidades federativas')
+  }
+  return await res.json()
+} // Sin la coma aquí si es un archivo de exportación pura
