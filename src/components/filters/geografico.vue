@@ -1,39 +1,60 @@
 <template>
-  <select v-model="store.municipio">
-    <option value="">Municipio</option>
-    <option v-for="m in municipios" :key="m.Id" :value="m">
-      {{ m.Nombre }}
-    </option>
-  </select>
+  <div class="campo">
+    <label>Municipios y Localidades</label>
+    <ul>
+      <li>
+        <strong>{{ store.entidad.Nombre }}</strong>
+        <ul>
+          <li v-for="mun in store.municipios" :key="mun.Id">
+            <span @click="toggleMunicipio(mun)" style="cursor:pointer">
+              {{ mun.Nombre }} <button @click.stop="toggleMunicipio(mun)">+</button>
+            </span>
 
-  <select v-model="store.localidad" :disabled="!store.municipio">
-    <option value="">Localidad</option>
-    <option v-for="l in localidades" :key="l.Id" :value="l">
-      {{ l.Nombre }}
-    </option>
-  </select>
-
-  <input v-model="store.ageb" placeholder="AGEB (4)" maxlength="4" />
-  <input v-model="store.manzana" placeholder="Manzana (3)" maxlength="3" />
+            <!-- Localidades -->
+            <ul v-if="mun.localidades.length && municipioDesplegado === mun">
+              <li v-for="loc in mun.localidades" :key="loc.Id">
+                <span
+                  @click="store.seleccionarLocalidad(loc)"
+                  :class="{ selected: store.localidad === loc }"
+                >
+                  {{ loc.Nombre }}
+                </span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useDenueStore } from '../../store/denue.js'
-import { getMunicipiosEdomex } from '../../api/municipio'
-import { getLocalidadesByMunicipio } from '../../api/localidad'
+import { ref, onMounted } from 'vue'
+import { useDenueStore } from '../../store/denue'
 
 const store = useDenueStore()
-const municipios = ref([])
-const localidades = ref([])
+const municipioDesplegado = ref(null)
 
-getMunicipiosEdomex().then(r => municipios.value = r.data)
-
-watch(() => store.municipio, async (m) => {
-  store.localidad = null
-  if (m) {
-    const res = await getLocalidadesByMunicipio(m.Id)
-    localidades.value = res.data
-  }
+onMounted(() => {
+  if (!store.municipios.length) store.cargarMunicipios()
 })
+
+function toggleMunicipio(mun) {
+  municipioDesplegado.value = municipioDesplegado.value === mun ? null : mun
+  store.seleccionarMunicipio(mun)
+}
 </script>
+
+<style>
+.selected {
+  font-weight: bold;
+  color: blue;
+}
+ul {
+  list-style-type: none;
+  padding-left: 1em;
+}
+li button {
+  margin-left: 0.5em;
+}
+</style>

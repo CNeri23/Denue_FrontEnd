@@ -1,28 +1,39 @@
 <template>
-  <section class="barra">
-    <FiltroActividad />
-    <FiltroGeografico />
+  <div class="filtros">
+    <Actividad />
+    <Geografico tipo="municipio" />
+    <Geografico tipo="localidad" />
+    <AgebManzana />
+
     <button @click="consultar">Consultar</button>
-  </section>
+  </div>
 </template>
 
 <script setup>
-import { useDenueStore } from '../../store/denue.js'
-import { getUnidades } from '../../api/unidad.js'
-import FiltroActividad from './actividad.vue'
-import FiltroGeografico from './geografico.vue'
+import Actividad from './actividad.vue'
+import Geografico from './geografico.vue'
+import AgebManzana from './agebManzana.vue'
+
+import { useDenueStore } from '../../store/denue'
+import { getUnidades } from '../../api/unidad'
 
 const store = useDenueStore()
 
 async function consultar() {
-  const res = await getUnidades({
-    actividad: store.actividad?.Codigo,
+  const filtros = {
+    actividades: store.actividadesSeleccionadas.map(a => a.Id),
     municipio: store.municipio?.Id,
     localidad: store.localidad?.Id,
-    ageb: store.ageb,
-    manzana: store.manzana
-  })
+    ageb: store.ageb || null,
+    manzana: store.manzana || null
+  }
 
-  store.unidades = res.data
+  try {
+    const res = await getUnidades(filtros)
+    store.unidades = res.data?.data ?? []
+  } catch (e) {
+    console.error('Error consultando unidades', e)
+    store.unidades = []
+  }
 }
 </script>
