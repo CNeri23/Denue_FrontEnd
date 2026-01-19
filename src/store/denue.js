@@ -10,16 +10,17 @@ export const useDenueStore = defineStore('denue', {
     municipiosSeleccionados: [],
     localidadesSeleccionadas: [],
 
-    // Sectores base del DENUE para iniciar el árbol
-    sectoresBase: [
+    // Sectores raíz para iniciar el árbol de actividades
+    sectoresRaiz: [
       { Clave: '11', Nombre: 'Agricultura, cría y explotación de animales...' },
       { Clave: '21', Nombre: 'Minería' },
-      { Clave: '22', Nombre: 'Generación, transmisión y dist...' },
+      { Clave: '22', Nombre: 'Generación, transmisión y dist. de energía...' },
       { Clave: '23', Nombre: 'Construcción' },
       { Clave: '31-33', Nombre: 'Industrias manufactureras' },
-      // Agrega los demás sectores según el catálogo oficial
+      { Clave: '43', Nombre: 'Comercio al por mayor' },
+      { Clave: '46', Nombre: 'Comercio al por menor' }
     ],
-    arbolActividades: {}, // Aquí guardaremos los hijos cargados: { '11': [datos_del_back] }
+    arbolActividades: {}, // Almacena hijos: { '11': [data], '111': [data] }
     actividadesSeleccionadas: [],
     
     ageb: '',
@@ -28,59 +29,56 @@ export const useDenueStore = defineStore('denue', {
   }),
 
   actions: {
-    // --- LÓGICA DE ACTIVIDADES ---
+    // CARGA DE ACTIVIDADES (Basado en tu Controller)
     async cargarHijosActividad(nivel, clave) {
-      if (this.arbolActividades[clave]) return; // Evitar recargar si ya existe
-      
+      if (this.arbolActividades[clave]) return;
       this.cargando = true;
       try {
         const res = await fetch(`${BASE}/actividad/arbol/${nivel}/${clave}`);
         const result = await res.json();
         if (result.status === 200) {
-          // Guardamos los hijos directamente asociados a la clave del padre
           this.arbolActividades[clave] = result.data;
         }
       } catch (e) {
-        console.error("Error cargando hijos de actividad:", e);
+        console.error("Error en actividades:", e);
       } finally {
         this.cargando = false;
       }
     },
 
-    // Selección recursiva (Padre marca a todos los hijos)
+    // Selección en cascada recursiva
     seleccionarRecursivo(nodos, checked) {
+      if (!nodos) return;
       nodos.forEach(nodo => {
         const index = this.actividadesSeleccionadas.indexOf(nodo.Clave);
-        
-        if (checked && index === -1) {
-          this.actividadesSeleccionadas.push(nodo.Clave);
-        } else if (!checked && index > -1) {
-          this.actividadesSeleccionadas.splice(index, 1);
-        }
+        if (checked && index === -1) this.actividadesSeleccionadas.push(nodo.Clave);
+        else if (!checked && index > -1) this.actividadesSeleccionadas.splice(index, 1);
 
-        // Si tiene hijos cargados en el objeto Children del back, procesarlos
         if (nodo.Children && nodo.Children.length > 0) {
           this.seleccionarRecursivo(nodo.Children, checked);
         }
       });
     },
 
-    // --- LÓGICA GEOGRÁFICA ---
+    // GEOGRAFÍA
     async cargarEntidades() {
       const res = await getEntidades();
       this.entidades = res.data?.map(e => ({ Id: e.ClaveEntidad, Nombre: e.NombreEntidad.trim() })) || [];
     },
 
     async cargarArbolGeografico(idEntidad) {
-      const res = await fetch(`${BASE}/municipio/arbol/${idEntidad}`);
-      const result = await res.json();
-      if (result.status === 200) {
-        this.municipios = result.data.map(m => ({
-          Id: m.Clave,
-          Nombre: m.Nombre.trim(),
-          Localidades: m.Localidades || []
-        }));
-      }
+      this.cargando = true;
+      try {
+        const res = await fetch(`${BASE}/municipio/arbol/${idEntidad}`);
+        const result = await res.json();
+        if (result.status === 200) {
+          this.municipios = result.data.map(m => ({
+            Id: m.Clave,
+            Nombre: m.Nombre.trim(),
+            Localidades: m.Localidades || []
+          }));
+        }
+      } finally { this.cargando = false; }
     },
 
     toggleMunicipioCascada(mun, checked) {
