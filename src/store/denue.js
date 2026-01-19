@@ -1,154 +1,97 @@
 import { defineStore } from 'pinia'
-import { getActividades } from '../api/actividad'
-import { getEntidades, getMunicipiosByEntidad } from '../api/municipio'
-import { getLocalidadesByMunicipio } from '../api/localidad'
+import { getEntidades } from '../api/municipio'
+import { BASE } from '../services/config'
 
 export const useDenueStore = defineStore('denue', {
   state: () => ({
-    // Catálogos base
     entidades: [],
-    municipios: [], // Estructura: [{ Id, Nombre, localidades: [] }]
+    municipios: [],
+    entidadSeleccionada: null,
+    municipiosSeleccionados: [],
+    localidadesSeleccionadas: [],
 
-    // Selecciones actuales
-    entidad: null,
-    municipio: null,
-    localidad: null,
-
-    // Actividades
-    actividades: [],
-    arbolActividades: {},
+    // Sectores base del DENUE para iniciar el árbol
+    sectoresBase: [
+      { Clave: '11', Nombre: 'Agricultura, cría y explotación de animales...' },
+      { Clave: '21', Nombre: 'Minería' },
+      { Clave: '22', Nombre: 'Generación, transmisión y dist...' },
+      { Clave: '23', Nombre: 'Construcción' },
+      { Clave: '31-33', Nombre: 'Industrias manufactureras' },
+      // Agrega los demás sectores según el catálogo oficial
+    ],
+    arbolActividades: {}, // Aquí guardaremos los hijos cargados: { '11': [datos_del_back] }
     actividadesSeleccionadas: [],
-
-    // Filtros opcionales
-    ageb: null,
-    manzana: null,
-
-    // Resultados de la consulta final
-    unidades: [],
+    
+    ageb: '',
+    manzana: '',
     cargando: false
   }),
 
   actions: {
-    // --- SECCIÓN ENTIDADES ---
-    async cargarEntidades() {
-      try {
-        const res = await getEntidades();
-        // Ajuste según tu respuesta de Postman:
-        this.entidades = res.data?.map(e => ({
-          Id: e.id_entidad,      // <--- Aquí estaba el error, antes decía 'Id'
-          Nombre: e.NombreEntidad // <--- Ajustado a 'NombreEntidad'
-        })) ?? [];
-        console.log("Entidades procesadas con éxito:", this.entidades);
-      } catch (e) {
-        console.error('Error al cargar entidades:', e);
-      }
-    },
-
-    async seleccionarEntidad(ent) {
-      // Ahora ent.Id ya no será undefined porque lo mapeamos arriba
-      if (!ent || !ent.Id) {
-        console.error("ID de entidad sigue siendo inválido:", ent);
-        return;
-      }
-      this.entidad = ent;
-      this.municipio = null;
-      this.localidad = null;
-      this.municipios = []; 
-      await this.cargarMunicipios(ent.Id); 
-    },
-
-    // --- SECCIÓN MUNICIPIOS ---
-    async cargarMunicipios(entidadId) {
+    // --- LÓGICA DE ACTIVIDADES ---
+    async cargarHijosActividad(nivel, clave) {
+      if (this.arbolActividades[clave]) return; // Evitar recargar si ya existe
+      
       this.cargando = true;
       try {
-        const res = await getMunicipiosByEntidad(entidadId);
-        
-        // Tu JSON tiene la data en res.data
-        const listaOriginal = res.data || [];
-
-        this.municipios = listaOriginal.map(m => ({
-          // Ajuste según tu JSON real:
-          Id: m.IdMunicipio, 
-          Nombre: m.NombreMunicipio.trim(),
-          localidades: [] 
-        }));
-        
-        console.log("Municipios procesados:", this.municipios);
+        const res = await fetch(`${BASE}/actividad/arbol/${nivel}/${clave}`);
+        const result = await res.json();
+        if (result.status === 200) {
+          // Guardamos los hijos directamente asociados a la clave del padre
+          this.arbolActividades[clave] = result.data;
+        }
       } catch (e) {
-        console.error('Error al cargar municipios:', e);
-        this.municipios = [];
+        console.error("Error cargando hijos de actividad:", e);
       } finally {
         this.cargando = false;
       }
     },
 
-    async cargarLocalidades(mun) {
-      if (!mun || (mun.localidades && mun.localidades.length > 0)) return;
-      
-      try {
-        const res = await getLocalidadesByMunicipio(mun.Id);
-        const listaLoc = res.data || [];
+    // Selección recursiva (Padre marca a todos los hijos)
+    seleccionarRecursivo(nodos, checked) {
+      nodos.forEach(nodo => {
+        const index = this.actividadesSeleccionadas.indexOf(nodo.Clave);
         
-        const index = this.municipios.findIndex(m => m.Id === mun.Id);
-        if (index !== -1) {
-          this.municipios[index].localidades = listaLoc.map(l => ({
-            // Revisa si en localidades también usas Mayúsculas:
-            Id: l.IdLocalidad || l.id,
-            Nombre: (l.NombreLocalidad || l.nombre || '').trim()
-          }));
+        if (checked && index === -1) {
+          this.actividadesSeleccionadas.push(nodo.Clave);
+        } else if (!checked && index > -1) {
+          this.actividadesSeleccionadas.splice(index, 1);
         }
-      } catch (e) {
-        console.error('Error al cargar localidades:', e);
+
+        // Si tiene hijos cargados en el objeto Children del back, procesarlos
+        if (nodo.Children && nodo.Children.length > 0) {
+          this.seleccionarRecursivo(nodo.Children, checked);
+        }
+      });
+    },
+
+    // --- LÓGICA GEOGRÁFICA ---
+    async cargarEntidades() {
+      const res = await getEntidades();
+      this.entidades = res.data?.map(e => ({ Id: e.ClaveEntidad, Nombre: e.NombreEntidad.trim() })) || [];
+    },
+
+    async cargarArbolGeografico(idEntidad) {
+      const res = await fetch(`${BASE}/municipio/arbol/${idEntidad}`);
+      const result = await res.json();
+      if (result.status === 200) {
+        this.municipios = result.data.map(m => ({
+          Id: m.Clave,
+          Nombre: m.Nombre.trim(),
+          Localidades: m.Localidades || []
+        }));
       }
     },
 
-    // --- SECCIÓN ACTIVIDADES (ÁRBOL) ---
-    async cargarActividades() {
-      if (this.actividades.length > 0) return
-      
-      try {
-        const res = await getActividades({ limit: 1000 })
-        const data = res.data ? res.data : res
-        
-        this.actividades = data.map(a => ({
-          Id: a.CodigoActividad,
-          Nombre: a.NombreActividad.trim(),
-          NombreSector: a.NombreSector.trim(),
-          NombreSubsector: a.NombreSubsector.trim(),
-          NombreRama: a.NombreRama.trim(),
-          NombreSubrama: a.NombreSubrama.trim()
-        }))
-
-        // Construcción del árbol jerárquico
-        const tree = {}
-        this.actividades.forEach(a => {
-          if (!tree[a.NombreSector]) tree[a.NombreSector] = {}
-          if (!tree[a.NombreSector][a.NombreSubsector]) tree[a.NombreSector][a.NombreSubsector] = {}
-          if (!tree[a.NombreSector][a.NombreSubsector][a.NombreRama]) tree[a.NombreSector][a.NombreSubsector][a.NombreRama] = []
-          
-          // Evitar duplicados en el último nivel
-          const existe = tree[a.NombreSector][a.NombreSubsector][a.NombreRama].some(s => s.Id === a.Id)
-          if (!existe) {
-            tree[a.NombreSector][a.NombreSubsector][a.NombreRama].push({ 
-              Id: a.Id, 
-              Nombre: a.NombreSubrama 
-            })
-          }
-        })
-        this.arbolActividades = tree
-      } catch (e) {
-        console.error('Error al cargar actividades:', e)
+    toggleMunicipioCascada(mun, checked) {
+      const locIds = mun.Localidades.map(l => l.Id);
+      if (checked) {
+        if (!this.municipiosSeleccionados.includes(mun.Id)) this.municipiosSeleccionados.push(mun.Id);
+        locIds.forEach(id => { if (!this.localidadesSeleccionadas.includes(id)) this.localidadesSeleccionadas.push(id); });
+      } else {
+        this.municipiosSeleccionados = this.municipiosSeleccionados.filter(id => id !== mun.Id);
+        this.localidadesSeleccionadas = this.localidadesSeleccionadas.filter(id => !locIds.includes(id));
       }
-    },
-
-    seleccionarMunicipio(mun) {
-      this.municipio = mun
-      this.localidad = null
-      this.cargarLocalidades(mun)
-    },
-
-    seleccionarLocalidad(loc) {
-      this.localidad = loc
     }
   }
 })
