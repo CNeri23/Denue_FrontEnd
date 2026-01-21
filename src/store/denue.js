@@ -11,12 +11,9 @@ export const useDenueStore = defineStore('denue', {
     localidadesSeleccionadas: [],
     personalSeleccionado: [],
     listadoPersonal: [],
-
-    // Sectores obtenidos de la BD
     sectoresRaiz: [], 
-    arbolActividades: {}, // Estructura: { '33': [data], '331': [data] }
+    arbolActividades: {},
     actividadesSeleccionadas: [],
-    
     ageb: '',
     manzana: '',
     cargando: false
@@ -89,7 +86,7 @@ export const useDenueStore = defineStore('denue', {
         
         // Mapeamos para que el componente use .Id y .Nombre siempre
         this.listadoPersonal = (result.data || []).map(p => ({
-          Id: p.OcupacionPersonal, // El nombre que viene de la Entity
+          Id: p.OcupacionPersonal,
           Nombre: p.OcupacionPersonal 
         }));
       } finally {
@@ -106,7 +103,6 @@ export const useDenueStore = defineStore('denue', {
       }
     },
 
-    // GEOGRAFÍA (Mantengo tus funciones actuales)
     async cargarEntidades() {
       const res = await getEntidades();
       this.entidades = res.data?.map(e => ({ 
