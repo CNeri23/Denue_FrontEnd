@@ -9,6 +9,8 @@ export const useDenueStore = defineStore('denue', {
     entidadSeleccionada: null,
     municipiosSeleccionados: [],
     localidadesSeleccionadas: [],
+    personalSeleccionado: [],
+    listadoPersonal: [],
 
     // Sectores obtenidos de la BD
     sectoresRaiz: [], 
@@ -77,6 +79,31 @@ export const useDenueStore = defineStore('denue', {
           this.seleccionarRecursivo(nodo.Children, checked);
         }
       });
+    },
+
+    async cargarPersonal() {
+      this.cargando = true;
+      try {
+        const res = await fetch(`${BASE}/personal`);
+        const result = await res.json();
+        
+        // Mapeamos para que el componente use .Id y .Nombre siempre
+        this.listadoPersonal = (result.data || []).map(p => ({
+          Id: p.OcupacionPersonal, // El nombre que viene de la Entity
+          Nombre: p.OcupacionPersonal 
+        }));
+      } finally {
+        this.cargando = false;
+      }
+    },
+
+    togglePersonal(id) {
+      const index = this.personalSeleccionado.indexOf(id);
+      if (index > -1) {
+        this.personalSeleccionado.splice(index, 1);
+      } else {
+        this.personalSeleccionado.push(id);
+      }
     },
 
     // GEOGRAFÍA (Mantengo tus funciones actuales)

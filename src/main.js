@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import App from '../src/views/denue.vue'
 import router from './router'
 import 'leaflet/dist/leaflet.css'
-import './style.css'
+import './assets/main.css'
 
 const app = createApp(App)
 
