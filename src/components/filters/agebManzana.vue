@@ -1,30 +1,16 @@
 <template>
-  <div class="filter-panel">
-    <div class="panel-header">
-      <i class="icon-layers"></i>
-      <span>Detalle Geográfico (Opcional)</span>
-    </div>
-    
-    <div class="inputs-grid">
+  <div class="denue-panel">
+    <div class="header-orange">Detalle Geográfico</div>
+    <div class="inputs-container">
       <div class="input-group">
         <label>AGEB</label>
-        <input 
-          type="text" 
-          v-model="store.ageb" 
-          placeholder="Ej. 012A"
-          maxlength="4"
-        >
+        <input type="text" v-model="store.ageb" placeholder="Ej. 012A" maxlength="4">
       </div>
-      
       <div class="input-group">
         <label>Manzana</label>
-        <input 
-          type="text" 
-          v-model="store.manzana" 
-          placeholder="Ej. 001"
-          maxlength="3"
-        >
+        <input type="text" v-model="store.manzana" placeholder="Ej. 001" maxlength="3">
       </div>
+      <p class="info">Filtros opcionales para mayor precisión.</p>
     </div>
   </div>
 </template>
@@ -35,34 +21,10 @@ const store = useDenueStore()
 </script>
 
 <style scoped>
-.inputs-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15px;
-  padding: 15px;
-  background: #1a1a1b;
-}
-
-.input-group label {
-  display: block;
-  font-size: 0.7rem;
-  color: #888;
-  margin-bottom: 5px;
-  text-transform: uppercase;
-}
-
-.input-group input {
-  width: 100%;
-  background: #111;
-  border: 1px solid #333;
-  color: #fff;
-  padding: 8px 12px;
-  border-radius: 4px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.input-group input:focus {
-  border-color: #42b883;
-}
+.denue-panel { border: 1px solid #ccc; height: 350px; }
+.header-orange { background: #f0ad4e; color: white; padding: 8px; font-weight: bold; font-size: 13px; }
+.inputs-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+.input-group label { display: block; font-size: 11px; color: #666; font-weight: bold; margin-bottom: 4px; }
+.input-group input { width: 100%; border: 1px solid #ccc; padding: 6px; border-radius: 3px; box-sizing: border-box; }
+.info { font-size: 11px; color: #999; font-style: italic; margin-top: 10px; }
 </style>

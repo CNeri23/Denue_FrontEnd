@@ -10,17 +10,9 @@ export const useDenueStore = defineStore('denue', {
     municipiosSeleccionados: [],
     localidadesSeleccionadas: [],
 
-    // Sectores raíz para iniciar el árbol de actividades
-    sectoresRaiz: [
-      { Clave: '11', Nombre: 'Agricultura, cría y explotación de animales...' },
-      { Clave: '21', Nombre: 'Minería' },
-      { Clave: '22', Nombre: 'Generación, transmisión y dist. de energía...' },
-      { Clave: '23', Nombre: 'Construcción' },
-      { Clave: '31-33', Nombre: 'Industrias manufactureras' },
-      { Clave: '43', Nombre: 'Comercio al por mayor' },
-      { Clave: '46', Nombre: 'Comercio al por menor' }
-    ],
-    arbolActividades: {}, // Almacena hijos: { '11': [data], '111': [data] }
+    // Sectores obtenidos de la BD
+    sectoresRaiz: [], 
+    arbolActividades: {}, // Estructura: { '33': [data], '331': [data] }
     actividadesSeleccionadas: [],
     
     ageb: '',
@@ -29,7 +21,28 @@ export const useDenueStore = defineStore('denue', {
   }),
 
   actions: {
-    // CARGA DE ACTIVIDADES (Basado en tu Controller)
+    /**
+     * Obtiene los sectores de primer nivel (Raíz) desde la BD
+     */
+    async cargarSectoresRaiz() {
+      if (this.sectoresRaiz.length > 0) return;
+      this.cargando = true;
+      try {
+        const res = await fetch(`${BASE}/actividad/sectores`);
+        const result = await res.json();
+        if (result.status === 200) {
+          this.sectoresRaiz = result.data;
+        }
+      } catch (e) {
+        console.error("Error cargando sectores raíz:", e);
+      } finally {
+        this.cargando = false;
+      }
+    },
+
+    /**
+     * Carga los hijos de cualquier nivel (subsector, rama, etc.)
+     */
     async cargarHijosActividad(nivel, clave) {
       if (this.arbolActividades[clave]) return;
       this.cargando = true;
@@ -46,13 +59,19 @@ export const useDenueStore = defineStore('denue', {
       }
     },
 
-    // Selección en cascada recursiva
+    /**
+     * Selecciona o deselecciona nodos de forma recursiva (cascada)
+     */
     seleccionarRecursivo(nodos, checked) {
       if (!nodos) return;
       nodos.forEach(nodo => {
         const index = this.actividadesSeleccionadas.indexOf(nodo.Clave);
-        if (checked && index === -1) this.actividadesSeleccionadas.push(nodo.Clave);
-        else if (!checked && index > -1) this.actividadesSeleccionadas.splice(index, 1);
+        
+        if (checked && index === -1) {
+          this.actividadesSeleccionadas.push(nodo.Clave);
+        } else if (!checked && index > -1) {
+          this.actividadesSeleccionadas.splice(index, 1);
+        }
 
         if (nodo.Children && nodo.Children.length > 0) {
           this.seleccionarRecursivo(nodo.Children, checked);
@@ -60,10 +79,13 @@ export const useDenueStore = defineStore('denue', {
       });
     },
 
-    // GEOGRAFÍA
+    // GEOGRAFÍA (Mantengo tus funciones actuales)
     async cargarEntidades() {
       const res = await getEntidades();
-      this.entidades = res.data?.map(e => ({ Id: e.ClaveEntidad, Nombre: e.NombreEntidad.trim() })) || [];
+      this.entidades = res.data?.map(e => ({ 
+        Id: e.ClaveEntidad, 
+        Nombre: e.NombreEntidad.trim() 
+      })) || [];
     },
 
     async cargarArbolGeografico(idEntidad) {
@@ -75,17 +97,40 @@ export const useDenueStore = defineStore('denue', {
           this.municipios = result.data.map(m => ({
             Id: m.Clave,
             Nombre: m.Nombre.trim(),
-            Localidades: m.Localidades || []
+            // CREAMOS ID ÚNICO: ClaveMunicipio + ClaveLocalidad
+            Localidades: (m.Localidades || []).map(l => ({
+              ...l,
+              Id: `${m.Clave}${l.Id}` // Ejemplo: "01001" + "0001" = "010010001"
+            }))
           }));
         }
-      } finally { this.cargando = false; }
+      } finally { 
+        this.cargando = false; 
+      }
+    },
+
+    toggleLocalidad(idUnico) {
+      const index = this.localidadesSeleccionadas.indexOf(idUnico);
+      if (index > -1) {
+        this.localidadesSeleccionadas.splice(index, 1);
+      } else {
+        this.localidadesSeleccionadas.push(idUnico);
+      }
     },
 
     toggleMunicipioCascada(mun, checked) {
+      // Usamos el nuevo ID único de las localidades del municipio
       const locIds = mun.Localidades.map(l => l.Id);
+      
       if (checked) {
-        if (!this.municipiosSeleccionados.includes(mun.Id)) this.municipiosSeleccionados.push(mun.Id);
-        locIds.forEach(id => { if (!this.localidadesSeleccionadas.includes(id)) this.localidadesSeleccionadas.push(id); });
+        if (!this.municipiosSeleccionados.includes(mun.Id)) {
+          this.municipiosSeleccionados.push(mun.Id);
+        }
+        locIds.forEach(id => { 
+          if (!this.localidadesSeleccionadas.includes(id)) {
+            this.localidadesSeleccionadas.push(id); 
+          }
+        });
       } else {
         this.municipiosSeleccionados = this.municipiosSeleccionados.filter(id => id !== mun.Id);
         this.localidadesSeleccionadas = this.localidadesSeleccionadas.filter(id => !locIds.includes(id));
