@@ -66,27 +66,42 @@ const togglePanel = (panel) => {
 }
 
 async function consultar() {
-  // Cerrar paneles abiertos al iniciar la consulta
+  // Cerramos los paneles de la interfaz
   showActividades.value = false
   showGeografia.value = false
   showPersonal.value = false
 
-  const filtros = {
-    actividades: store.actividadesSeleccionadas,
-    entidad: store.entidadSeleccionada,
-    municipios: store.municipiosSeleccionados,
-    localidades: store.localidadesSeleccionadas,
-    personal: store.personalSeleccionado,
-    ageb: store.ageb || null,
-    manzana: store.manzana || null
+  // Preparamos los parámetros exactos que tu UnidadController espera
+  const params = {
+    actividad: store.actividadesSeleccionadas.join(','),
+    cve_ent: store.entidadSeleccionada,
+    // Agregamos municipio (singular) tomando los datos de municipiosSeleccionados
+    municipio: store.municipiosSeleccionados.join(','),
+    // Si tu back aceptara localidades, se agregaría aquí
+    localidad: store.localidadesSeleccionadas.join(','), 
+    per_ocu: store.personalSeleccionado.join(','),
+    ageb: store.ageb,
+    manzana: store.manzana,
+    q: store.searchQuery
   }
+
+  // Limpiamos nulos, vacíos y el molesto string "null"
+  const filtrosLimpios = Object.fromEntries(
+    Object.entries(params).filter(([_, value]) => 
+      value !== null && 
+      value !== undefined && 
+      value !== '' && 
+      value !== 'null'
+    )
+  )
 
   try {
     store.cargando = true
-    const res = await getUnidades(filtros)
+    // Llamada a la API con el objeto ya mapeado
+    const res = await getUnidades(filtrosLimpios)
     store.unidades = res.data?.data ?? []
   } catch (e) {
-    console.error('Error en la consulta:', e)
+    console.error('Error al consultar unidades:', e)
   } finally {
     store.cargando = false
   }

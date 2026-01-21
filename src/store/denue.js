@@ -79,18 +79,17 @@ export const useDenueStore = defineStore('denue', {
     },
 
     async cargarPersonal() {
-      this.cargando = true;
       try {
         const res = await fetch(`${BASE}/personal`);
         const result = await res.json();
         
-        // Mapeamos para que el componente use .Id y .Nombre siempre
+        // Guardamos el texto original en el Id para que el filtro coincida con la DB
         this.listadoPersonal = (result.data || []).map(p => ({
-          Id: p.OcupacionPersonal,
-          Nombre: p.OcupacionPersonal 
+          Id: p.OcupacionPersonal, 
+          Nombre: p.OcupacionPersonal
         }));
-      } finally {
-        this.cargando = false;
+      } catch (e) {
+        console.error("Error:", e);
       }
     },
 
