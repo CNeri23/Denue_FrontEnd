@@ -11,7 +11,7 @@ export const useDenueStore = defineStore('denue', {
     localidadesSeleccionadas: [],
     personalSeleccionado: [],
     listadoPersonal: [],
-    sectoresRaiz: [], 
+    sectoresRaiz: [],
     arbolActividades: {},
     actividadesSeleccionadas: [],
     ageb: '',

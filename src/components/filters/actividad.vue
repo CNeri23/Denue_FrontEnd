@@ -8,8 +8,7 @@
             type="checkbox" 
             @click.stop 
             :checked="store.actividadesSeleccionadas.includes(sec.Clave)"
-            @change="e => toggleSeleccionSector(sec, e.target.checked)"
-          >
+            @change="e => toggleSeleccionSector(sec, e.target.checked)">
           <span class="text-bold">({{ sec.Clave }}) {{ sec.Nombre }}</span>
         </div>
         <div v-if="desplegados[sec.Clave]" class="indent">

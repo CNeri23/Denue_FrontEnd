@@ -29,7 +29,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.denue-panel { border: 1px solid #ccc; height: 350px; display: flex; flex-direction: column; background: #fff; }
+.denue-panel { border: 1px solid #ccc; height: auto; display: flex; flex-direction: column; background: #fff; }
 .tree-container { flex: 1; overflow-y: auto; padding: 5px; }
 .row { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 0; }
 .text-xs { font-size: 11px; color: #333; }
