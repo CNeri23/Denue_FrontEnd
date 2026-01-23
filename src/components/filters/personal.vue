@@ -16,8 +16,7 @@
           <input 
             type="checkbox" 
             :checked="store.personalSeleccionado.includes(p.Id)" 
-            @change="store.togglePersonal(p.Id)"
-          >
+            @change="store.togglePersonal(p.Id)">
           <span class="text-xs">{{ p.Nombre }}</span>
         </label>
       </div>

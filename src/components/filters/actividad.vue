@@ -49,30 +49,49 @@ async function toggleSector(clave) {
   if (desplegados[clave]) await store.cargarHijosActividad('sector', clave)
 }
 
-// Modificada para asegurar que los hijos existan antes de seleccionar
+// Mantenemos esta lógica para clics individuales
 async function toggleSeleccionSector(sec, checked) {
-  // 1. Asegurar que los hijos estén cargados si se va a marcar
   if (checked && !store.arbolActividades[sec.Clave]) {
     await store.cargarHijosActividad('sector', sec.Clave)
   }
 
-  // 2. Marcar/Desmarcar el padre
   const index = store.actividadesSeleccionadas.indexOf(sec.Clave)
-  if (checked && index === -1) store.actividadesSeleccionadas.push(sec.Clave)
-  else if (!checked) store.actividadesSeleccionadas = store.actividadesSeleccionadas.filter(c => c !== sec.Clave)
+  if (checked && index === -1) {
+    store.actividadesSeleccionadas.push(sec.Clave)
+  } else if (!checked) {
+    store.actividadesSeleccionadas = store.actividadesSeleccionadas.filter(c => c !== sec.Clave)
+  }
   
-  // 3. Aplicar recursividad a los hijos ya cargados
   if (store.arbolActividades[sec.Clave]) {
     store.seleccionarRecursivo(store.arbolActividades[sec.Clave], checked)
   }
 }
 
+// FUNCIÓN OPTIMIZADA: toggleSeleccionarTodo
 async function toggleSeleccionarTodo(checked) {
-  // Usamos un bucle for...of para poder usar await y asegurar 
-  // que cada rama se cargue y se seleccione correctamente
-  for (const sec of store.sectoresRaiz) {
-    await toggleSeleccionSector(sec, checked)
+  // CASO RÁPIDO: Si desmarcamos, vaciamos todo de golpe sin procesar ramas
+  if (!checked) {
+    store.actividadesSeleccionadas = []
+    return
   }
+
+  // CASO MARCAR: Solo aquí procesamos las cargas asíncronas
+  // Usamos Promise.all para cargar sectores en paralelo en lugar de uno por uno
+  const promesasCarga = store.sectoresRaiz
+    .filter(sec => !store.arbolActividades[sec.Clave])
+    .map(sec => store.cargarHijosActividad('sector', sec.Clave))
+  
+  await Promise.all(promesasCarga)
+
+  // Una vez cargados, usamos la lógica recursiva del store masivamente
+  store.sectoresRaiz.forEach(sec => {
+    if (!store.actividadesSeleccionadas.includes(sec.Clave)) {
+      store.actividadesSeleccionadas.push(sec.Clave)
+    }
+    if (store.arbolActividades[sec.Clave]) {
+      store.seleccionarRecursivo(store.arbolActividades[sec.Clave], true)
+    }
+  })
 }
 </script>
 
