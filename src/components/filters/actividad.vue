@@ -1,5 +1,15 @@
 <template>
   <div class="denue-panel">
+    <div class="header-selection">
+      <label class="row select-all">
+        <input 
+          type="checkbox" 
+          :checked="esTodoSeleccionado"
+          @change="e => toggleSeleccionarTodo(e.target.checked)">
+        <span class="text-bold">Todas las unidades</span>
+      </label>
+    </div>
+
     <div class="tree-container">
       <div v-for="sec in store.sectoresRaiz" :key="sec.Clave" class="root-node">
         <div class="row" @click="toggleSector(sec.Clave)">
@@ -20,7 +30,7 @@
 </template>
 
 <script setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, computed } from 'vue'
 import { useDenueStore } from '../../store/denue'
 import ActividadNodo from './ActividadNodo.vue'
 
@@ -29,18 +39,39 @@ const desplegados = reactive({})
 
 onMounted(() => store.cargarSectoresRaiz())
 
+const esTodoSeleccionado = computed(() => {
+  return store.sectoresRaiz.length > 0 && 
+         store.sectoresRaiz.every(sec => store.actividadesSeleccionadas.includes(sec.Clave))
+})
+
 async function toggleSector(clave) {
   desplegados[clave] = !desplegados[clave]
   if (desplegados[clave]) await store.cargarHijosActividad('sector', clave)
 }
 
-function toggleSeleccionSector(sec, checked) {
+// Modificada para asegurar que los hijos existan antes de seleccionar
+async function toggleSeleccionSector(sec, checked) {
+  // 1. Asegurar que los hijos estén cargados si se va a marcar
+  if (checked && !store.arbolActividades[sec.Clave]) {
+    await store.cargarHijosActividad('sector', sec.Clave)
+  }
+
+  // 2. Marcar/Desmarcar el padre
   const index = store.actividadesSeleccionadas.indexOf(sec.Clave)
   if (checked && index === -1) store.actividadesSeleccionadas.push(sec.Clave)
   else if (!checked) store.actividadesSeleccionadas = store.actividadesSeleccionadas.filter(c => c !== sec.Clave)
   
+  // 3. Aplicar recursividad a los hijos ya cargados
   if (store.arbolActividades[sec.Clave]) {
     store.seleccionarRecursivo(store.arbolActividades[sec.Clave], checked)
+  }
+}
+
+async function toggleSeleccionarTodo(checked) {
+  // Usamos un bucle for...of para poder usar await y asegurar 
+  // que cada rama se cargue y se seleccione correctamente
+  for (const sec of store.sectoresRaiz) {
+    await toggleSeleccionSector(sec, checked)
   }
 }
 </script>
