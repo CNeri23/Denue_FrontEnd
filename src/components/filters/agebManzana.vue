@@ -17,8 +17,7 @@
           type="text"
           v-model="store.manzana"
           maxlength="3"
-          class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+          class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
     </div>
   </div>

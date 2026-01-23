@@ -4,7 +4,6 @@ import { BASE } from '../services/config'
 
 /**
  * NUEVA: Obtener árbol completo (Municipios + Localidades)
- * Ruta en backend: api/municipio/arbol/([0-9]+)
  */
 export async function getArbolGeografico(idEntidad) {
   const res = await fetch(`${BASE}/municipio/arbol/${idEntidad}`)
