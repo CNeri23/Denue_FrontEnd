@@ -7,8 +7,7 @@
           type="text"
           v-model="store.ageb"
           maxlength="4"
-          class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+          class="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
       </div>
 
       <div class="flex flex-col w-1/2">
@@ -22,7 +21,6 @@
     </div>
   </div>
 </template>
-
 
 <script setup>
 import { useDenueStore } from '../../store/denue'
