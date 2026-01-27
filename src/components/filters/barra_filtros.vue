@@ -57,7 +57,7 @@ import Personal from './personal.vue'
 import Geografico from './geografico.vue'
 import AgebManzana from './agebManzana.vue'
 import { useDenueStore } from '../../store/denue'
-import { getUnidades } from '../../api/unidad'
+import { getUnidades, getUnidadesMapa } from '../../api/unidad'
 
 const store = useDenueStore()
 
@@ -100,26 +100,40 @@ async function consultar() {
 
   try {
     store.cargando = true;
-    const res = await getUnidades(filtrosLimpios);
-    
-    // Axios entrega el JSON del servidor en res.data
-    if (res.data && Array.isArray(res.data.data)) {
-      // GUARDAMOS EL OBJETO COMPLETO
-      store.unidades = res.data; 
-      console.log(`Éxito: Se encontraron ${res.data.data.length} unidades.`);
+
+    const resListado = await getUnidades(filtrosLimpios);
+
+    if (resListado?.data) {
+      store.unidades = {
+        ...resListado,
+        data: [...resListado.data]
+      };
     } else {
       store.unidades = { data: [] };
-      console.warn("La respuesta no tiene el formato esperado o está vacía.");
     }
 
+    const resMapa = await getUnidadesMapa(filtrosLimpios);
+
+    if (resMapa?.data) {
+      store.unidadesMapa = {
+        data: [...resMapa.data]
+      };
+    } else {
+      store.unidadesMapa = { data: [] };
+    }
+
+    console.log('MAPA TOTAL:', store.unidadesMapa.data.length);
+
   } catch (e) {
-    console.error('Error en la petición:', e);
+    console.error('Error consultar:', e);
     store.unidades = { data: [] };
+    store.unidadesMapa = { data: [] };
   } finally {
     store.cargando = false;
   }
 }
 </script>
+
 
 <style scoped>
 .contenedor-principal { 

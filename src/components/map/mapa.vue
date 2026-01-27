@@ -37,40 +37,38 @@ onMounted(() => {
   markersLayer = L.layerGroup().addTo(map)
 })
 
-watch(() => store.unidades, async (nuevas) => {
-  if (!map || !markersLayer) return;
+watch(
+  () => store.unidadesMapa.data,
+  (lista) => {
+    console.log('LISTA PARA MAPA REAL:', lista);
 
-  // CodeIgniter manda los datos en nuevas.data
-  const lista = nuevas?.data || [];
-  console.log(`Pintando en mapa: ${lista.length} unidades`);
+    if (!map || !markersLayer) return;
 
-  markersLayer.clearLayers();
-  const bounds = [];
+    markersLayer.clearLayers();
+    const bounds = [];
 
-  lista.forEach(u => {
-    // Usamos los nombres que configuramos en el Controller
-    const lat = parseFloat(u.latitud);
-    const lng = parseFloat(u.longitud);
-    
-    if (!isNaN(lat) && !isNaN(lng)) {
-      const marker = L.marker([lat, lng], { icon: defaultIcon })
-        .bindPopup(`
-          <b>${u.nombreEstablecimiento || u.nom_estab || 'Sin nombre'}</b><br>
-          <small>${u.act_nombre || 'Sin actividad'}</small>
-        `)
-        .on('click', () => { 
-          store.unidadSeleccionada = u; 
-        });
-      
-      markersLayer.addLayer(marker);
-      bounds.push([lat, lng]);
+    lista.forEach(u => {
+      const lat = parseFloat(u.latitud);
+      const lng = parseFloat(u.longitud);
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const marker = L.marker([lat, lng])
+          .bindPopup(`
+            <b>${u.nombreEstablecimiento}</b><br>
+            ${u.act_nombre}
+          `);
+
+        markersLayer.addLayer(marker);
+        bounds.push([lat, lng]);
+      }
+    });
+
+    if (bounds.length) {
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
-  });
-
-  if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [50, 50] });
-  }
-}, { deep: true });
+  },
+  { deep: true }
+);
 </script>
 
 <style scoped>
