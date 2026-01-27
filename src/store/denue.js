@@ -6,7 +6,6 @@ export const useDenueStore = defineStore('denue', {
   state: () => ({
     entidades: [],
     municipios: [],
-    unidades: { data: [] },
     unidadesMapa: { data: [] },
     unidadSeleccionada: null,
     entidadSeleccionada: null,

@@ -20,17 +20,7 @@ export async function getUnidadesMapa(params = {}) {
   const res = await fetch(url)
 
   if (!res.ok) {
-    throw new Error('Error al obtener las unidades para el mapa')
-  }
-
-  return await res.json()
-}
-
-export async function getUnidadById(id) {
-  const res = await fetch(`${BASE}/unidad/${id}`)
-
-  if (!res.ok) {
-    throw new Error('Error al obtener la unidad económica')
+    throw new Error('Error al obtener unidades para el mapa')
   }
 
   return await res.json()

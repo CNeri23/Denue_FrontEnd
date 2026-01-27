@@ -57,7 +57,7 @@ import Personal from './personal.vue'
 import Geografico from './geografico.vue'
 import AgebManzana from './agebManzana.vue'
 import { useDenueStore } from '../../store/denue'
-import { getUnidades, getUnidadesMapa } from '../../api/unidad'
+import { getUnidadesMapa } from '../../api/unidad'
 
 const store = useDenueStore()
 
@@ -101,17 +101,6 @@ async function consultar() {
   try {
     store.cargando = true;
 
-    const resListado = await getUnidades(filtrosLimpios);
-
-    if (resListado?.data) {
-      store.unidades = {
-        ...resListado,
-        data: [...resListado.data]
-      };
-    } else {
-      store.unidades = { data: [] };
-    }
-
     const resMapa = await getUnidadesMapa(filtrosLimpios);
 
     if (resMapa?.data) {
@@ -126,7 +115,6 @@ async function consultar() {
 
   } catch (e) {
     console.error('Error consultar:', e);
-    store.unidades = { data: [] };
     store.unidadesMapa = { data: [] };
   } finally {
     store.cargando = false;
