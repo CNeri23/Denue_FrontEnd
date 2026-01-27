@@ -34,10 +34,6 @@ export const useDenueStore = defineStore('denue', {
       } finally { this.cargando = false; }
     },
 
-    getStreetViewUrl(lat, lng) {
-      return `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${lng}&key=TU_API_KEY_AQUI`;
-    },
-
     async cargarHijosActividad(nivel, clave) {
       if (this.arbolActividades[clave]) return;
       this.cargando = true;
