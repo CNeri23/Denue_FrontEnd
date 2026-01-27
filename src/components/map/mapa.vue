@@ -5,73 +5,80 @@
 </template>
 
 <script setup>
-import L from 'leaflet'
 import { onMounted, watch, nextTick } from 'vue'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { useDenueStore } from '../../store/denue'
 
 const store = useDenueStore()
+let map = null
+let markersLayer = null
 
-let map
-let markersLayer
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41], iconAnchor: [12, 41]
+})
 
-onMounted(async () => {
-  map = L.map('map').setView([19.35, -99.6], 8)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
+onMounted(() => {
+  map = L.map('map').setView([19.43, -99.13], 8)
+  
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
+    attribution: '© OpenStreetMap contributors'
   }).addTo(map)
 
   markersLayer = L.layerGroup().addTo(map)
-
-  // 🔑 MUY IMPORTANTE
-  await nextTick()
-  map.invalidateSize()
 })
 
-watch(
-  () => store.unidades,
-  (data) => {
-    if (!map || !markersLayer) return
+watch(() => store.unidades, async (nuevas) => {
+  if (!map || !markersLayer) return;
 
-    markersLayer.clearLayers()
+  // CodeIgniter manda los datos en nuevas.data
+  const lista = nuevas?.data || [];
+  console.log(`Pintando en mapa: ${lista.length} unidades`);
 
-    if (!data || !data.length) return
+  markersLayer.clearLayers();
+  const bounds = [];
 
-    const bounds = []
-
-    data.forEach(u => {
-      if (!u.Latitud || !u.Longitud) return
-
-      const marker = L.marker([u.Latitud, u.Longitud])
+  lista.forEach(u => {
+    // Usamos los nombres que configuramos en el Controller
+    const lat = parseFloat(u.latitud);
+    const lng = parseFloat(u.longitud);
+    
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const marker = L.marker([lat, lng], { icon: defaultIcon })
         .bindPopup(`
-          <strong>${u.Nombre}</strong><br>
-          ${u.Calle || ''}
+          <b>${u.nombreEstablecimiento || u.nom_estab || 'Sin nombre'}</b><br>
+          <small>${u.act_nombre || 'Sin actividad'}</small>
         `)
-
-      markersLayer.addLayer(marker)
-      bounds.push([u.Latitud, u.Longitud])
-    })
-
-    if (bounds.length) {
-      map.fitBounds(bounds, { padding: [40, 40] })
+        .on('click', () => { 
+          store.unidadSeleccionada = u; 
+        });
+      
+      markersLayer.addLayer(marker);
+      bounds.push([lat, lng]);
     }
-  },
-  { deep: true }
-)
+  });
+
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [50, 50] });
+  }
+}, { deep: true });
 </script>
 
 <style scoped>
-.map-container {
-  width: 100%;
-  background: #1e1e1e;
-  border-radius: 12px;
-  padding: 8px;
-}
+.map-container, #map { width: 100%; height: 100%; min-height: 550px; border-radius: 8px; z-index: 1; }
 
-#map {
-  width: 100%;
-  height: 70vh;
-  min-height: 520px;
-  border-radius: 10px;
-}
+  #map { 
+    height: 100%; 
+    width: 100%; 
+    min-height: 550px; /* Esto es vital */
+  }
 </style>
