@@ -5,27 +5,19 @@
 </template>
 
 <script setup>
-import { onMounted, watch, nextTick } from 'vue'
+import { onMounted, watch } from 'vue'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+
 import { useDenueStore } from '../../store/denue'
 
 const store = useDenueStore()
 let map = null
-let markersLayer = null
-
-const defaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41], iconAnchor: [12, 41]
-})
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+let clusterLayer = null
 
 onMounted(() => {
   map = L.map('map').setView([19.43, -99.13], 8)
@@ -34,41 +26,45 @@ onMounted(() => {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map)
 
-  markersLayer = L.layerGroup().addTo(map)
+  // 👇 CLUSTER en vez de layerGroup
+  clusterLayer = L.markerClusterGroup({
+    chunkedLoading: true,   // 🔥 evita que se congele
+    chunkDelay: 50
+  })
+
+  map.addLayer(clusterLayer)
 })
 
 watch(
   () => store.unidadesMapa.data,
   (lista) => {
-    console.log('LISTA PARA MAPA REAL:', lista);
+    if (!map || !clusterLayer) return
 
-    if (!map || !markersLayer) return;
-
-    markersLayer.clearLayers();
-    const bounds = [];
+    clusterLayer.clearLayers()
+    const bounds = []
 
     lista.forEach(u => {
-      const lat = parseFloat(u.latitud);
-      const lng = parseFloat(u.longitud);
+      const lat = parseFloat(u.latitud)
+      const lng = parseFloat(u.longitud)
 
       if (!isNaN(lat) && !isNaN(lng)) {
         const marker = L.marker([lat, lng])
           .bindPopup(`
             <b>${u.nombreEstablecimiento}</b><br>
             ${u.act_nombre}
-          `);
+          `)
 
-        markersLayer.addLayer(marker);
-        bounds.push([lat, lng]);
+        clusterLayer.addLayer(marker)
+        bounds.push([lat, lng])
       }
-    });
+    })
 
     if (bounds.length) {
-      map.fitBounds(bounds, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50] })
     }
   },
   { deep: true }
-);
+)
 </script>
 
 <style scoped>
